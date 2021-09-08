@@ -24,6 +24,7 @@ import weakref
 from typing import Union, Dict, Any
 
 from cobbler.cexceptions import CX
+from cobbler import clogger
 from cobbler import serializer
 from cobbler.cobbler_collections.distros import Distros
 from cobbler.cobbler_collections.files import Files
@@ -52,6 +53,7 @@ class CollectionManager:
         self.__dict__ = CollectionManager.__shared_state
         if not CollectionManager.has_loaded:
             self.__load(api)
+        self.logger = clogger.Logger()
 
     def __load(self, api):
         """
@@ -172,7 +174,6 @@ class CollectionManager:
         """
         Load all cobbler_collections from disk
 
-        :raises CX: if there is an error in deserialization
         """
         for collection in (
             self._menus,
@@ -188,8 +189,8 @@ class CollectionManager:
             try:
                 serializer.deserialize(collection)
             except Exception as e:
-                raise CX("serializer: error loading collection %s: %s. Check /etc/cobbler/modules.conf"
-                         % (collection.collection_type(), e)) from e
+                self.logger.error("serializer: error loading collection %s: %s. Check /etc/cobbler/modules.conf"
+                                  % (collection.collection_type(), e))
 
     def get_items(self, collection_type: str) -> Union[Distros, Profiles, Systems, Repos, Images, Mgmtclasses, Packages,
                                                        Files, Menus]:
