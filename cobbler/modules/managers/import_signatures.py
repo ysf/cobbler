@@ -31,19 +31,19 @@ import stat
 
 import magic
 
+from cobbler.items import profile, distro
+from cobbler.cexceptions import CX
+from cobbler import enums, utils
+from cobbler.manager import ManagerModule
+
+from cobbler.items import repo as item_repo
+
 HAS_HIVEX = True
 try:
     import hivex
     from hivex.hive_types import REG_SZ
 except Exception:
     HAS_HIVEX = False
-
-from cobbler.items import profile, distro
-from cobbler.cexceptions import CX
-from cobbler import enums, utils
-from cobbler.manager import ManagerModule
-
-import cobbler.items.repo as item_repo
 
 # Import aptsources module if available to obtain repo mirror.
 try:

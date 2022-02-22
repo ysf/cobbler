@@ -4,7 +4,6 @@ import sys
 import os
 import time
 import cobbler.templar
-from cobbler.cexceptions import CX
 
 plib = distutils.sysconfig.get_python_lib()
 mod_path = "%s/cobbler" % plib

@@ -26,8 +26,6 @@ import time
 import cobbler.utils as utils
 from cobbler.manager import ManagerModule
 
-from cobbler.cexceptions import CX
-
 MANAGER = None
 
 
@@ -148,55 +146,46 @@ class _DnsmasqManager(ManagerModule):
         """
         # dnsmasq knows how to read this database of MACs -> IPs, so we'll keep it up to date every time we add a
         # system.
-        fh = open("/etc/ethers", "w+")
-        for system in self.systems:
-            if not system.is_management_supported(cidr_ok=False):
-                continue
-            for (name, interface) in list(system.interfaces.items()):
-                mac = interface["mac_address"]
-                ip = interface["ip_address"]
-                if not mac:
-                    # can't write this w/o a MAC address
+        with open("/etc/ethers", "w+") as fh:
+            for system in self.systems:
+                if not system.is_management_supported(cidr_ok=False):
                     continue
-                if ip is not None and ip != "":
-                    fh.write(mac.upper() + "\t" + ip + "\n")
-        fh.close()
+                for (name, interface) in list(system.interfaces.items()):
+                    mac = interface["mac_address"]
+                    ip = interface["ip_address"]
+                    if not mac:
+                        # can't write this w/o a MAC address
+                        continue
+                    if ip is not None and ip != "":
+                        fh.write(mac.upper() + "\t" + ip + "\n")
 
     def regen_hosts(self):
         """
         This rewrites the hosts file and thus also rewrites the dns config.
         """
         # dnsmasq knows how to read this database for host info (other things may also make use of this later)
-        fh = open("/var/lib/cobbler/cobbler_hosts", "w+")
-        for system in self.systems:
-            if not system.is_management_supported(cidr_ok=False):
-                continue
-            for (name, interface) in list(system.interfaces.items()):
-                mac = interface["mac_address"]
-                host = interface["dns_name"]
-                ip = interface["ip_address"]
-                ipv6 = interface["ipv6_address"]
-                if not mac:
+        with open("/var/lib/cobbler/cobbler_hosts", "w+") as fh:
+            for system in self.systems:
+                if not system.is_management_supported(cidr_ok=False):
                     continue
-                if host is not None and host != "" and ipv6 is not None and ipv6 != "":
-                    fh.write(ipv6 + "\t" + host + "\n")
-                elif host is not None and host != "" and ip is not None and ip != "":
-                    fh.write(ip + "\t" + host + "\n")
-        fh.close()
+                for (name, interface) in list(system.interfaces.items()):
+                    mac = interface["mac_address"]
+                    host = interface["dns_name"]
+                    ip = interface["ip_address"]
+                    ipv6 = interface["ipv6_address"]
+                    if not mac:
+                        continue
+                    if host is not None and host != "" and ipv6 is not None and ipv6 != "":
+                        fh.write(ipv6 + "\t" + host + "\n")
+                    elif host is not None and host != "" and ip is not None and ip != "":
+                        fh.write(ip + "\t" + host + "\n")
 
     def restart_service(self):
         """
         This restarts the dhcp server and thus applied the newly written config files.
-
-        :raises CX
         """
-        # TODO: Reuse the utils method for service restarts
         if self.settings.restart_dhcp:
-            rc = utils.subprocess_call("service dnsmasq restart")
-            if rc != 0:
-                error_msg = "service dnsmasq restart failed"
-                self.logger.error(error_msg)
-                raise CX(error_msg)
+            utils.service_restart("dnsmasq")
 
 
 def get_manager(api):

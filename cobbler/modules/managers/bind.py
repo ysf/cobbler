@@ -41,7 +41,8 @@ def register() -> str:
 
 class _BindManager(ManagerModule):
 
-    def what(self) -> str:
+    @staticmethod
+    def what() -> str:
         """
         Identifies what this class is managing.
 
@@ -154,14 +155,13 @@ class _BindManager(ManagerModule):
                             socket.inet_aton(system.power_address)
                             power_address_is_ip = True
                         except socket.error:
-                            power_address_is_ip = False
+                            pass
 
                         # if the power address is an IP, then add it to the DNS with the host suffix of "-ipmi"
                         # TODO: Perhpas the suffix can be configurable through settings?
                         if power_address_is_ip:
                             ipmi_host = host + "-ipmi"
-                            ipmi_ips = []
-                            ipmi_ips.append(system.power_address)
+                            ipmi_ips = [system.power_address]
                             try:
                                 zones[best_match][ipmi_host] = ipmi_ips + zones[best_match][ipmi_host]
                             except KeyError:
@@ -610,13 +610,9 @@ zone "%(arpa)s." {
         This syncs the bind server with it's new config files.
         Basically this restarts the service to apply the changes.
         """
-        # TODO: Reuse the utils method for service restarts
         named_service_name = utils.named_service_name()
-        dns_restart_command = "service %s restart" % named_service_name
-        ret = utils.subprocess_call(dns_restart_command, True)
-        if ret != 0:
-            self.logger.error("%s service failed", named_service_name)
-        return ret
+        if self.settings.restart_dns:
+            utils.service_restart(named_service_name)
 
 
 def get_manager(api):
