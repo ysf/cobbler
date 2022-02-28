@@ -1,3 +1,6 @@
+from unittest.mock import MagicMock
+
+from cobbler.api import CobblerAPI
 from cobbler.modules import nsupdate_add_system_post
 
 
@@ -11,10 +14,11 @@ def test_register():
 
 def test_run():
     # Arrange
-    args = None
+    api = MagicMock(spec=CobblerAPI)
+    args = ["testname"]
 
     # Act
-    result = nsupdate_add_system_post.run(None, args)
+    result = nsupdate_add_system_post.run(api, args)
 
     # Assert
     assert result

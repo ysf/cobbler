@@ -1,4 +1,51 @@
+from unittest.mock import MagicMock
+
+import pytest
+
+from cobbler.api import CobblerAPI
+from cobbler.settings import Settings
 from cobbler import autoinstall_manager
+from cobbler.cobbler_collections.manager import CollectionManager
+from cobbler.items.distro import Distro
+from cobbler.items.profile import Profile
+from cobbler.items.system import System
+
+
+@pytest.fixture
+def collection_mgr_mock():
+    api_mock = MagicMock(spec=CobblerAPI)
+    settings_mock = MagicMock(spec=Settings)
+    settings_mock.autoinstall_snippets_dir = "/var/lib/cobbler/snippets"
+    settings_mock.autoinstall_templates_dir = "/var/lib/cobbler/templates"
+    settings_mock.next_server_v4 = ""
+    settings_mock.next_server_v6 = ""
+    settings_mock.default_virt_bridge = ""
+    settings_mock.default_virt_type = "auto"
+    settings_mock.default_virt_ram = 64
+    settings_mock.run_install_triggers = True
+    settings_mock.yum_post_install_mirror = True
+    settings_mock.enable_ipxe = True
+    settings_mock.enable_menu = True
+    settings_mock.virt_auto_boot = True
+    settings_mock.default_ownership = []
+    settings_mock.default_name_servers = []
+    settings_mock.default_name_servers_search = []
+    settings_mock.default_virt_disk_driver = "raw"
+    api_mock.settings.return_value = settings_mock
+    collection_mgr = MagicMock(spec=CollectionManager)
+    collection_mgr.api = api_mock
+    test_distro = Distro(api_mock)
+    test_distro.name = "test"
+    collection_mgr.distros.return_value = MagicMock(return_value=[test_distro])
+    test_profile = Profile(api_mock)
+    test_profile.name = "test"
+    collection_mgr.profiles.return_value = MagicMock(return_value=[test_profile])
+    test_system = System(api_mock)
+    test_system.name = "test"
+    collection_mgr.systems.return_value = MagicMock(return_value=[test_system])
+    collection_mgr.repos.return_value = MagicMock(return_value=[])
+    return collection_mgr
+
 
 # 2022-02-28_093028_validate_autoinstall_files] 2022-02-28T09:30:29 - DEBUG | running python triggers from /var/lib/cobbler/triggers/task/validate_autoinstall_files/pre/*
 # [2022-02-28_093028_validate_autoinstall_files] 2022-02-28T09:30:29 - DEBUG | running shell triggers from /var/lib/cobbler/triggers/task/validate_autoinstall_files/pre/*
@@ -39,12 +86,12 @@ from cobbler import autoinstall_manager
 # [2022-02-28_093028_validate_autoinstall_files] 2022-02-28T09:30:29 - ERROR | ### TASK FAILED ###
 
 
-def test_create_autoinstallation_manager():
+def test_create_autoinstallation_manager(collection_mgr_mock):
     # Arrange
     # TODO
 
     # Act
-    result = autoinstall_manager.AutoInstallationManager(None)
+    result = autoinstall_manager.AutoInstallationManager(collection_mgr_mock)
 
     # Assert
     isinstance(result, autoinstall_manager.AutoInstallationManager)
